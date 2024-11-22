@@ -4,8 +4,10 @@ const User = require("./../models/Users");
 const z = require("zod");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
-const JWT_SECRET = require("../config");
+require("dotenv").config();
+const JWT_SECRET = process.env.JWT_SECRET;
 const { authMiddleware } = require("./../middlewares/middleswares");
+const Account = require("../models/Accounts");
 //schemas
 const signupSchema = z.object({
   username: z.string().min(6, "username must be atleat of 6 characters"),
@@ -23,7 +25,7 @@ const updateSchema = z.object({
 //controllers
 const signupcontroller = async (req, res) => {
   const data = req.body;
-  console.log(data);
+  console.log(JWT_SECRET);
   const result = signupSchema.safeParse(data);
   if (!result.success) {
     return res
@@ -40,6 +42,8 @@ const signupcontroller = async (req, res) => {
     const newuser = new User({ ...data, password: hashedPassword });
     const token = jwt.sign({ userId: newuser._id }, JWT_SECRET);
     await newuser.save();
+    const amount = Math.floor(Math.random() * 10000) + 1;
+    await Account.create({ userId: newuser._id, balance: amount });
     return res
       .status(201)
       .json({ token, message: "user created successfully" });
@@ -83,10 +87,11 @@ const updateUser = async (req, res) => {
       return res.status(400).json({ error: "invalid inputs" });
     }
     const userId = req.userId;
-    if(data.password){
+
+    if (data.password) {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(data.password, salt);
-    data.password=hashedPassword
+      data.password = hashedPassword;
     }
     const user = await User.findByIdAndUpdate(userId, data, { new: true });
     return res.status(200).json({ message: "updated successfully" });
@@ -96,20 +101,22 @@ const updateUser = async (req, res) => {
 };
 
 //route definitions
-const findUsers = async (req,res) => {
+const findUsers = async (req, res) => {
   const filter = req.query.filter || "";
   try {
-    const users = await User.find({
-      $or: [
-        { firstname: { $regex: filter, $options: "i" } },
-        { lastname: { $regex: filter, $options: "i" } },
-        { username: { $regex: filter, $options: "i" } }
-      ],
-   
-    },'username firstname lastname ');
-    return res.status(200).json({users})
+    const users = await User.find(
+      {
+        $or: [
+          { firstname: { $regex: filter, $options: "i" } },
+          { lastname: { $regex: filter, $options: "i" } },
+          { username: { $regex: filter, $options: "i" } },
+        ],
+      },
+      "username firstname lastname "
+    );
+    return res.status(200).json({ users });
   } catch (err) {
-    return res.status(500).json({error:"something went wrong"})
+    return res.status(500).json({ error: "something went wrong" });
   }
 };
 router

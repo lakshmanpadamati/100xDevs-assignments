@@ -1,4 +1,5 @@
-const {JWT_SECRET}=require("./../config")
+require('dotenv').config()
+const JWT_SECRET=process.env.JWT_SECRET
 const jwt=require("jsonwebtoken")
 const authMiddleware = (req, res, next) => {
     const authHeader = req.headers["authorization"];
@@ -19,6 +20,7 @@ const authMiddleware = (req, res, next) => {
     try {
       const decoded=jwt.verify(token, JWT_SECRET);
       req.userId=decoded.userId
+      console.log("next called")
       next();
     } catch (err) {
       console.log(err)
