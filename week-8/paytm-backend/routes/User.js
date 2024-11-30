@@ -1,6 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
 const User = require("./../models/Users");
+const mongoose = require("mongoose");
 const z = require("zod");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
@@ -8,14 +9,14 @@ require("dotenv").config();
 const JWT_SECRET = process.env.JWT_SECRET;
 const { authMiddleware } = require("./../middlewares/middleswares");
 const Account = require("../models/Accounts");
-//schemas
+
 const signupSchema = z.object({
-  username: z.string().min(6, "username must be atleat of 6 characters"),
+  email:z.string().email(),
   password: z.string().min(8, "password must atleast of 8 characters"),
   firstname: z.string().min(3, "First name must contain atleast 3 characters "),
   lastname: z.string().min(3, "LastName must contain atleast 3 characters"),
 });
-const signinSchema = z.object({ username: z.string(), password: z.string() });
+const signinSchema = z.object({ email: z.string(), password: z.string() });
 const updateSchema = z.object({
   firstname: z.string().optional(),
   lastname: z.string().optional(),
@@ -25,17 +26,18 @@ const updateSchema = z.object({
 //controllers
 const signupcontroller = async (req, res) => {
   const data = req.body;
-  console.log(JWT_SECRET);
-  const result = signupSchema.safeParse(data);
-  if (!result.success) {
-    return res
-      .status(400)
-      .json({ errors: "Invalid inputs please check inputs" });
-  }
-  try {
-    const existingUser = await User.findOne({ username: data.username });
+ console.log(data)
+ try {
+    const result = signupSchema.safeParse(data);
+    if (!result.success) {
+     console.log(result.error)
+      return res
+        .status(400)
+        .json({ error: "Invalid inputs please check inputs" });
+    }
+    const existingUser = await User.findOne({email: data.email });
     if (existingUser) {
-      return res.status(409).json({ error: "Username Already Taken" });
+      return res.status(409).json({ error: "Already have an account" });
     }
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(data.password, salt);
@@ -54,23 +56,27 @@ const signupcontroller = async (req, res) => {
 };
 
 const loginController = async (req, res) => {
+  console.log(req.body)
   const data = req.body;
-  const result = signinSchema.safeParse(data);
-  const { success } = result;
+  const {success} = signinSchema.safeParse(data);
+  
+ console.log(JWT_SECRET)
   if (!success) {
     return res.status(400).json({ error: "invalid input" });
   }
   try {
-    const user = await User.findOne({ username: data.username });
+    const user = await User.findOne({ email: data.email });
     if (!user) {
       return res.status(401).json({ error: "user not found" });
     }
+    console.log("before match")
     const isMatch = await bcrypt.compare(data.password, user.password);
     if (!isMatch) {
       return res
         .status(401)
         .json({ error: "Invalid credentials. Please check your password." });
     }
+    console.log(user._id)
     const token = jwt.sign({ userId: user._id }, JWT_SECRET);
     return res
       .status(200)
@@ -102,18 +108,30 @@ const updateUser = async (req, res) => {
 
 //route definitions
 const findUsers = async (req, res) => {
+  
   const filter = req.query.filter || "";
+  console.log(req.userId)
   try {
     const users = await User.find(
       {
-        $or: [
-          { firstname: { $regex: filter, $options: "i" } },
-          { lastname: { $regex: filter, $options: "i" } },
-          { username: { $regex: filter, $options: "i" } },
+        $and: [
+          {
+            $or: [
+              { firstname: { $regex: filter, $options: "i" } },
+              { lastname: { $regex: filter, $options: "i" } },
+              { email: { $regex: filter, $options: "i" } },
+            ],
+          },
+          {
+            _id: {
+              $ne:req.userId,
+            },
+          },
         ],
       },
-      "username firstname lastname "
+      "email firstname lastname "
     );
+    console.log(users)
     return res.status(200).json({ users });
   } catch (err) {
     return res.status(500).json({ error: "something went wrong" });
