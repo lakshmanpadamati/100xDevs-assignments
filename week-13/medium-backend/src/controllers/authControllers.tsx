@@ -20,18 +20,20 @@ const signupSchema = z.object({
     .min(8, { message: "Password must be at least 8 characters long" }),
 });
 // The signup controller function
+
 const signupcontroller = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
   try {
     // Validate the incoming data using Zod
+  
     const parsedData = signupSchema.safeParse(req.body);
-
     // If validation fails, return a 400 response with the error message
     if (!parsedData.success) {
+   
       return res.status(400).json({
-        message: parsedData.error.errors.map((err) => err.message).join(", "),
+        message: parsedData.error.errors.map((err) => `${err.path}: ${err.message}`).join(", "),
       });
     }
 
@@ -87,16 +89,15 @@ const signupcontroller = async (
 };
 const loginController = async (req: Request, res: Response) => {
   try {
-
     const response=loginSchema.safeParse(req.body)
-    console.log(req.body)
+
     if(!response.success){
         return res.status(400).json({
             message: response.error.errors.map((err) => err.message).join(", "),
           });   
     }
     const {email,password}=response.data;
-    console.log(email,password)
+  
     const user = await prisma.users.findUnique({
       where: { email },
     });
@@ -115,7 +116,7 @@ const loginController = async (req: Request, res: Response) => {
       process.env.JWT_SECRET as string,
       { expiresIn: "1h" }
     );
-    console.log(token);
+  
     return res.status(200).json({
       message: "Login successful",
       token,

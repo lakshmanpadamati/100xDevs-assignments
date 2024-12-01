@@ -39,7 +39,7 @@ const signupcontroller = (req, res) => __awaiter(void 0, void 0, void 0, functio
         // If validation fails, return a 400 response with the error message
         if (!parsedData.success) {
             return res.status(400).json({
-                message: parsedData.error.errors.map((err) => err.message).join(", "),
+                message: parsedData.error.errors.map((err) => `${err.path}: ${err.message}`).join(", "),
             });
         }
         // Extract validated data
@@ -88,14 +88,12 @@ const signupcontroller = (req, res) => __awaiter(void 0, void 0, void 0, functio
 const loginController = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const response = loginSchema.safeParse(req.body);
-        console.log(req.body);
         if (!response.success) {
             return res.status(400).json({
                 message: response.error.errors.map((err) => err.message).join(", "),
             });
         }
         const { email, password } = response.data;
-        console.log(email, password);
         const user = yield prisma.users.findUnique({
             where: { email },
         });
@@ -107,7 +105,6 @@ const loginController = (req, res) => __awaiter(void 0, void 0, void 0, function
             return res.status(401).json({ message: "Invalid credentials" });
         }
         const token = jsonwebtoken_1.default.sign({ email: user.email, id: user.id }, process.env.JWT_SECRET, { expiresIn: "1h" });
-        console.log(token);
         return res.status(200).json({
             message: "Login successful",
             token,

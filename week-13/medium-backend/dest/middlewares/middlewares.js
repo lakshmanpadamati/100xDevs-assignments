@@ -24,8 +24,10 @@ const authMiddleware = (req, res, next) => {
                 .status(401)
                 .json({ message: "Unauthorized: Missing or invalid token" });
         }
-        // Extract the token
+        // Extract the token'
         const token = authHeader.split(" ")[1];
+        console.log(token);
+        console.log();
         // Verify the token
         const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
         // Attach the decoded user info to the request object
@@ -34,7 +36,8 @@ const authMiddleware = (req, res, next) => {
         next();
     }
     catch (error) {
-        console.error("Authentication error:", error.message);
+        console.log(req.params);
+        console.error("in authmiddleware", error.message);
         return res
             .status(401)
             .json({ message: "Unauthorized: Invalid or expired token" });
@@ -56,7 +59,6 @@ const authorMiddleware = (req, res, next) => __awaiter(void 0, void 0, void 0, f
         // Attach the decoded user info to the request object
         const authorId = Number(decoded.id);
         const blogId = req.params.blogId;
-        console.log(req.params.blogId, authorId);
         const blog = yield prisma.blogs.findUnique({
             where: { id: Number(blogId) },
         });

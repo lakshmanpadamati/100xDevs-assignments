@@ -4,14 +4,14 @@ const zod_1 = require("zod");
 const blogSchema = zod_1.z.object({
     title: zod_1.z.string().min(1, { message: "Title is required" }),
     content: zod_1.z.string().min(1, { message: "Content is required" }),
-    tags: zod_1.z.array(zod_1.z.string()).optional(),
+    tags: zod_1.z.string().optional(),
     subtitle: zod_1.z.string().trim().optional(),
 });
 const updateBlogSchema = zod_1.z.object({
     title: zod_1.z.string().trim().optional(),
     content: zod_1.z.string().trim().optional(),
     subtitle: zod_1.z.string().trim().optional(),
-    tags: zod_1.z.array(zod_1.z.string()).optional(),
+    tags: zod_1.z.string().optional(),
 });
 const blogsFilterSchema = zod_1.z.object({
     q: zod_1.z.string().optional(),

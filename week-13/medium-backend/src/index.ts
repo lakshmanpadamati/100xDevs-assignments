@@ -1,3 +1,5 @@
+import { NextFunction } from "express";
+
 const middlewares = require("./middlewares/middlewares");
 const blogControllers = require("./controllers/blogControllers");
 const authControllers = require("./controllers/authControllers");
@@ -10,9 +12,9 @@ app.use(cors())
 app.use(express.json());
 
 // Apply authentication middleware globally except for signup and login routes
-router
+router.get("/api/v1/user/me",middlewares.authMiddleware,UserControllers.getMyProfile)
   .post("/api/v1/signup", authControllers.signupcontroller)
-  .post("/api/v1/login", authControllers.loginController)
+  .post("/api/v1/signin", authControllers.loginController)
   .use(middlewares.authMiddleware) // Apply to all subsequent routes
   .get("/api/v1/blogs", blogControllers.getAllBlogs)
   .get("/api/v1/users", UserControllers.getUsers)

@@ -25,9 +25,16 @@ const createBlog = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
     try {
         const { title, subtitle, content, tags } = response.data;
-        const BlogData = { title, subtitle, content, authorId: Number(req.user.id) };
-        if (tags && tags.length > 0) {
-            const tagConnections = yield Promise.all(tags.map((tag) => __awaiter(void 0, void 0, void 0, function* () {
+        console.log(response.data);
+        const BlogData = {
+            title,
+            subtitle,
+            content,
+            authorId: Number(req.user.id),
+        };
+        if (tags) {
+            const tagsArray = tags.split(",");
+            const tagConnections = yield Promise.all(tagsArray.map((tag) => __awaiter(void 0, void 0, void 0, function* () {
                 let existingTag = yield prisma.tags.findUnique({ where: { tag } });
                 if (!existingTag) {
                     existingTag = yield prisma.tags.create({
@@ -41,20 +48,23 @@ const createBlog = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         const blog = yield prisma.blogs.create({
             data: BlogData,
         });
-        return res.status(201).json(blog);
+        console.log(blog);
+        return res.status(201).json({ blog, message: "successfully created" });
     }
     catch (error) {
+        console.log(error);
         if (error instanceof Error) {
             return res
                 .status(500)
                 .json({ error: error.message || "something went wrong" });
         }
         else {
-            return res.status(500).json({ error: "An unexpected error occurred" });
+            return res.status(500).json({ message: "An unexpected error occurred" });
         }
     }
 });
 const getAllBlogs = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("blogs fetched");
     try {
         const filter = blogsFilterSchema.safeParse(req.query);
         if (!filter.success) {
@@ -71,17 +81,13 @@ const getAllBlogs = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             where: {
                 AND: [
                     {
-                        title: q
-                            ? { contains: q, mode: "insensitive" }
-                            : undefined,
+                        title: q ? { contains: q, mode: "insensitive" } : undefined,
                     },
                     {
                         authorId: authorId ? Number(authorId) : undefined,
                     },
                     {
-                        content: q
-                            ? { contains: q, mode: "insensitive" }
-                            : undefined,
+                        content: q ? { contains: q, mode: "insensitive" } : undefined,
                     },
                     {
                         tags: {
@@ -100,13 +106,25 @@ const getAllBlogs = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                 author: { select: { fullname: true } },
                 authorId: true,
                 subtitle: true,
+                likes_count: true,
                 content: false,
+                saved_count: true,
                 tags: true,
                 createdAt: true,
             },
         });
-        console.log(blogs);
-        return res.status(200).json(blogs);
+        const data = blogs.map((blog) => {
+            return {
+                id: blog.id,
+                title: blog.title,
+                subtitle: blog.subtitle,
+                author: blog.author.fullname,
+                authorId: blog.authorId,
+                tags: blog.tags,
+                createdAt: blog.createdAt,
+            };
+        });
+        return res.status(200).json(data);
     }
     catch (error) {
         if (error instanceof Error) {
@@ -246,5 +264,5 @@ module.exports = {
     updateBlog,
     deleteblog,
     getAllBlogs,
-    getTags
+    getTags,
 };

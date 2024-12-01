@@ -9,9 +9,31 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.toggleFriendship = exports.getUsers = void 0;
+exports.getMyProfile = exports.toggleFriendship = exports.getUsers = void 0;
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
+const getMyProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+        const user = yield prisma.users.findUnique({
+            where: { id: userId },
+            select: {
+                fullname: true,
+                email: true,
+                id: true,
+            },
+        });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        return res.status(200).json(user);
+    }
+    catch (error) {
+        return res.status(500).json({ message: error.message });
+    }
+});
+exports.getMyProfile = getMyProfile;
 const toggleFriendship = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
@@ -24,7 +46,9 @@ const toggleFriendship = (req, res) => __awaiter(void 0, void 0, void 0, functio
             return res.status(400).json({ message: "Target user ID is required" });
         }
         if (currentUserId === targetUserId) {
-            return res.status(400).json({ message: "You cannot toggle friendship with yourself" });
+            return res
+                .status(400)
+                .json({ message: "You cannot toggle friendship with yourself" });
         }
         // Check if the friendship already exists
         const existingFollow = yield prisma.usersFollow.findUnique({
@@ -45,7 +69,9 @@ const toggleFriendship = (req, res) => __awaiter(void 0, void 0, void 0, functio
                     },
                 },
             });
-            return res.status(200).json({ message: "Friendship removed successfully" });
+            return res
+                .status(200)
+                .json({ message: "Friendship removed successfully" });
         }
         else {
             // If a friendship does not exist, create it to "follow"
