@@ -26,6 +26,8 @@ const authMiddleware = (req, res, next) => {
         }
         // Extract the token'
         const token = authHeader.split(" ")[1];
+        console.log(token);
+        console.log();
         // Verify the token
         const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
         // Attach the decoded user info to the request object

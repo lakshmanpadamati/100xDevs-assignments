@@ -3,7 +3,7 @@ import Signin from "./pages/Auth";
 import NotificationProvider from "./context/Notification";
 import AuthContextProvider from "./context/Auth";
 import Dashboard from "./pages/Dashboard";
-import NewStory from "./pages/New-story";
+import NewStory from "./pages/new-story";
 import Blogs from "./pages/Blogs";
 import Protected from "./pages/Protected";
 import Blog from "./pages/Blog";
@@ -14,7 +14,12 @@ function App() {
       <AuthContextProvider>
         <NotificationProvider>
           <Routes>
-            <Route path="/auth" element={<Signin />} />     
+
+            
+            <Route path="/auth" element={<Signin />} />
+
+
+            
             <Route element={<Protected />}>
               
               <Route path="/" element={<Dashboard />}>

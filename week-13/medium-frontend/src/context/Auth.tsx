@@ -1,4 +1,4 @@
-import React, { createContext, ReactNode, useContext, useEffect, useState } from "react";
+import { createContext, ReactNode, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 interface User {
@@ -11,7 +11,6 @@ interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
-  loading: boolean; // Loading state to handle async behavior
 }
 
 interface AuthContextType extends AuthState {
@@ -22,11 +21,11 @@ interface AuthContextType extends AuthState {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 const AuthContextProvider = ({ children }: { children: ReactNode }) => {
+     console.log("hello from context")
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     token: null,
     isAuthenticated: false,
-    loading: true, // Start in loading state
   });
 
   const navigate = useNavigate();
@@ -37,8 +36,8 @@ const AuthContextProvider = ({ children }: { children: ReactNode }) => {
       user,
       token,
       isAuthenticated: true,
-      loading: false,
     });
+  
   };
 
   const logout = () => {
@@ -46,58 +45,51 @@ const AuthContextProvider = ({ children }: { children: ReactNode }) => {
       user: null,
       token: null,
       isAuthenticated: false,
-      loading: false,
     });
     localStorage.removeItem("token");
     navigate("/auth");
   };
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const storedToken = localStorage.getItem("token");
+    const storedToken = localStorage.getItem("token");
+    if (!storedToken) {
+      navigate("/auth");
+      return;
+    }
 
-      if (!storedToken) {
-        setAuthState((prev) => ({
-          ...prev,
-          isAuthenticated: false,
-          loading: false,
-        }));
-        navigate("/auth");
-        return;
-      }
-
-      try {
-        const response = await fetch("http://localhost:4000/api/v1/user/me", {
-          headers: {
-            Authorization: `Bearer ${storedToken}`,
-          },
-        });
-
+    fetch("http://localhost:4000/api/v1/user/me", {
+      headers: {
+        Authorization: `Bearer ${storedToken}`,
+      },
+    })
+      .then((response) => {
         if (!response.ok) {
           throw new Error("Invalid token");
         }
-        const user: User = await response.json();
-        setAuthState({
-          user,
-          token: storedToken,
-          isAuthenticated: true,
-          loading: false,
-        });
-      } catch (error) {
-        console.error("Authentication check failed:", error);
-        setAuthState({
-          user: null,
-          token: null,
-          isAuthenticated: false,
-          loading: false,
-        });
+        return response.json();
+      })
+      .then((data) => {
+        setAuthState((prev) => {
+            return {
+              user:data,
+              token:storedToken,
+              isAuthenticated:true
+            };
+          });
+      })
+      .catch(() => {
+        setAuthState((prev) => {
+            return {
+              user: null,
+              token: null,
+              isAuthenticated: false,
+            };
+          });
+          
         localStorage.removeItem("token");
         navigate("/auth");
-      }
-    };
-
-    checkAuth();
-  }, [navigate]);
+      });
+  }, []);
 
   return (
     <AuthContext.Provider
@@ -107,7 +99,7 @@ const AuthContextProvider = ({ children }: { children: ReactNode }) => {
         logout,
       }}
     >
-      {!authState.loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
@@ -121,3 +113,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+
