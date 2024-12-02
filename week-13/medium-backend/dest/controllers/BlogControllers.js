@@ -48,7 +48,6 @@ const createBlog = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         const blog = yield prisma.blogs.create({
             data: BlogData,
         });
-        console.log(blog);
         return res.status(201).json({ blog, message: "successfully created" });
     }
     catch (error) {
@@ -90,11 +89,13 @@ const getAllBlogs = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                         content: q ? { contains: q, mode: "insensitive" } : undefined,
                     },
                     {
-                        tags: {
-                            some: {
-                                tag: tag,
-                            },
-                        },
+                        tags: tag
+                            ? {
+                                some: {
+                                    tag: tag,
+                                },
+                            }
+                            : undefined,
                     },
                 ],
             },
@@ -103,27 +104,26 @@ const getAllBlogs = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             select: {
                 id: true,
                 title: true,
+                subtitle: true,
                 author: { select: { fullname: true } },
                 authorId: true,
-                subtitle: true,
                 likes_count: true,
-                content: false,
                 saved_count: true,
-                tags: true,
+                tags: { select: { id: true, tag: true } },
                 createdAt: true,
             },
         });
-        const data = blogs.map((blog) => {
-            return {
-                id: blog.id,
-                title: blog.title,
-                subtitle: blog.subtitle,
-                author: blog.author.fullname,
-                authorId: blog.authorId,
-                tags: blog.tags,
-                createdAt: blog.createdAt,
-            };
-        });
+        const data = blogs.map((blog) => ({
+            id: blog.id,
+            title: blog.title,
+            subtitle: blog.subtitle,
+            author: blog.author.fullname,
+            authorId: blog.authorId,
+            tags: blog.tags.map((t) => ({ id: t.id, tag: t.tag })),
+            likes_count: blog.likes_count,
+            saved_count: blog.saved_count,
+            createdAt: blog.createdAt.toISOString(), // Ensure it's in string format
+        }));
         return res.status(200).json(data);
     }
     catch (error) {

@@ -1,4 +1,5 @@
 import { createContext, useContext } from "react";
+import { Outlet } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 interface nofitficationInterface {
@@ -16,7 +17,7 @@ function NotificationProvider({ children }: any) {
   return (
     <NotificationContext.Provider value={{ notify }}>
         <ToastContainer autoClose={1000}/>
-      {children}
+     <Outlet/>
     </NotificationContext.Provider>
   );
 }
